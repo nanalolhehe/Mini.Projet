@@ -1,0 +1,129 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Dreamy French Word projet</title>
+    <link rel="stylesheet" href="style.css">
+    <link rel="icon" href="icon.ico" type="image/x-con">
+    <script src="three.min.js"></script>
+    <script src="french-dictionary.js"></script>
+    <script src="french_word_dream.js"></script>
+</head>
+<body>
+    <div id="threejs-bg"></div>
+    <div id="bubble-container"></div>
+    
+    <div class="dream-container">
+        <!-- Login Screen -->
+        <div id="login-screen" class="dream-screen active">
+            <div class="ethereal-card">
+                <h1 class="glow-text">FRENCH DREAMS</h1>
+                <div id="login-form">
+                    <h2 class="soft-title">Enter Your Dream</h2>
+                    <input type="text" id="player-name" placeholder="Your name" class="dream-input">
+                    <button id="login-btn" class="dream-btn pulse">Begin Journey</button>
+                    <div id="login-message" class="dream-message hidden"></div>
+                </div>
+                <div id="register-form" class="hidden">
+                    <h2 class="soft-title">New Dreamer</h2>
+                    <input type="text" id="register-name" placeholder="First name" class="dream-input">
+                    <input type="text" id="register-surname" placeholder="Last name" class="dream-input">
+                    <input type="number" id="register-age" placeholder="Age" min="5" max="120" class="dream-input">
+                    <button id="register-btn" class="dream-btn pulse">Create Profile</button>
+                    <div id="register-message" class="dream-message hidden"></div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Main Menu -->
+        <div id="main-menu" class="dream-screen">
+            <div class="ethereal-card">
+                <h1 class="glow-text">Welcome, <span id="welcome-name"></span></h1>
+                <div class="dream-stats">
+                    <div class="dream-stat">
+                        <div class="stat-value" id="menu-level">1</div>
+                        <div class="stat-label">Level</div>
+                    </div>
+                    <div class="dream-stat">
+                        <div class="stat-value" id="menu-score">0</div>
+                        <div class="stat-label">Score</div>
+                    </div>
+                </div>
+                <div class="dream-options">
+                    <button id="new-game-btn" class="dream-btn">New Dream</button>
+                    <button id="resume-game-btn" class="dream-btn">Continue</button>
+                    <button id="profile-btn" class="dream-btn">Profile</button>
+                    <button id="quit-btn" class="dream-btn">Awaken-quit</button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Profile Screen -->
+        <div id="profile-screen" class="dream-screen">
+            <div class="ethereal-card">
+                <h1 class="glow-text">Dream Profile</h1>
+                <div class="dream-info">
+                    <div class="info-row">
+                        <span class="info-label">Name:</span>
+                        <span id="profile-name" class="info-value"></span>
+                    </div>
+                    <div class="info-row">
+                        <span class="info-label">Age:</span>
+                        <span id="profile-age" class="info-value"></span>
+                    </div>
+                    <div class="info-row">
+                        <span class="info-label">Level:</span>
+                        <span id="profile-level" class="info-value"></span>
+                    </div>
+                    <div class="info-row">
+                        <span class="info-label">Score:</span>
+                        <span id="profile-score" class="info-value"></span>
+                    </div>
+                </div>
+                <button id="back-to-menu-btn" class="dream-btn">Return</button>
+            </div>
+        </div>
+
+        <!-- Game Screen -->
+        <div id="game-screen" class="dream-screen">
+            <div class="ethereal-card">
+                <div class="game-header">
+                    <h2 class="soft-title">Level <span id="current-level">1</span></h2>
+                    <div class="dream-stats">
+                        <div class="dream-stat">
+                            <div class="stat-value" id="words-found">0</div>
+                            <div class="stat-label">words Found</div>
+                        </div>
+                        <div class="dream-stat">
+                            <div class="stat-value" id="words-needed">3</div>
+                            <div class="stat-label">words Needed</div>
+                        </div>
+                        <div class="dream-stat">
+                            <div class="stat-value" id="min-length">3</div>
+                            <div class="stat-label">Min Length</div>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="dream-letters" id="letters-container"></div>
+                
+                <div class="dream-input-group">
+                    <input type="text" id="word-input" placeholder="Enter word sequence" class="dream-input" readonly>
+                    <button id="submit-word-btn" class="dream-btn">Submit</button>
+                </div>
+                
+                <div id="game-message" class="dream-message hidden"></div>
+                
+                <div class="dream-list">
+                    <h3 class="soft-title">Found Words!!</h3>
+                    <div class="word-list" id="word-list"></div>
+                </div>
+                
+                <button id="save-quit-btn" class="dream-btn">Save & Exit</button>
+            </div>
+        </div>
+    </div>
+    <script src="game.js"></script>
+</body>
+</html>
