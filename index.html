@@ -3,19 +3,26 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Dreamy French Word projet</title>
+    <title>Dreamy French Word Project</title>
     <link rel="stylesheet" href="style.css">
-    <link rel="icon" href="icon.ico" type="image/x-con">
+    <link rel="icon" href="icon.ico" type="image/x-icon">
     <script src="three.min.js"></script>
     <script src="french-dictionary.js"></script>
     <script src="french_word_dream.js"></script>
     <style>
         .letter {
             transition: transform 0.2s ease;
+            cursor: pointer;
         }
         .letter.selected {
             background-color: #ff6b6b;
             color: white;
+            transform: scale(1.1);
+        }
+        .dream-input {
+            width: 100%;
+            padding: 10px;
+            margin: 10px 0;
         }
     </style>
 </head>
@@ -102,11 +109,11 @@
                     <div class="dream-stats">
                         <div class="dream-stat">
                             <div class="stat-value" id="words-found">0</div>
-                            <div class="stat-label">words Found</div>
+                            <div class="stat-label">Words Found</div>
                         </div>
                         <div class="dream-stat">
                             <div class="stat-value" id="words-needed">3</div>
-                            <div class="stat-label">words Needed</div>
+                            <div class="stat-label">Words Needed</div>
                         </div>
                         <div class="dream-stat">
                             <div class="stat-value" id="min-length">3</div>
@@ -118,14 +125,14 @@
                 <div class="dream-letters" id="letters-container"></div>
                 
                 <div class="dream-input-group">
-                    <input type="text" id="word-input" placeholder="Enter word sequence" class="dream-input" readonly>
+                    <input type="text" id="word-input" placeholder="Type or select letters" class="dream-input">
                     <button id="submit-word-btn" class="dream-btn">Submit</button>
                 </div>
                 
                 <div id="game-message" class="dream-message hidden"></div>
                 
                 <div class="dream-list">
-                    <h3 class="soft-title">Found Words!!</h3>
+                    <h3 class="soft-title">Found Words</h3>
                     <div class="word-list" id="word-list"></div>
                 </div>
                 
@@ -133,14 +140,12 @@
             </div>
         </div>
     </div>
+
     <script>
-        // Keyboard input functionality
+        // Global keyboard handler
         function handleKeyboardInput(e) {
-            // Only handle keyboard input when game screen is active
-            if (!screens.game.classList.contains('active')) return;
-            
-            // Don't interfere with input field when it's focused
-            if (document.activeElement === wordInput) return;
+            // Only handle game keys when game screen is active
+            if (!document.getElementById('game-screen').classList.contains('active')) return;
             
             // Get current letters
             const letters = [];
@@ -149,59 +154,98 @@
                 letters.push(letter);
             }
 
-            // Check if pressed key matches any available letter
             const key = e.key.toLowerCase();
-            if (letters.includes(key)) {
-                e.preventDefault();
-                const index = letters.indexOf(key);
-                toggleLetterSelection(index);
-            }
-            // Handle backspace/delete
-            else if (e.key === 'Backspace' || e.key === 'Delete') {
-                e.preventDefault();
-                if (getC('selected_letter_count') > 0) {
-                    const lastSelectedIndex = Module.ccall('getSelectedLetter', 'number', ['number'], [getC('selected_letter_count') - 1]);
-                    toggleLetterSelection(lastSelectedIndex);
+            const inputFocused = document.activeElement === wordInput;
+
+            // Process game controls only when input isn't focused
+            if (!inputFocused) {
+                if (letters.includes(key)) {
+                    e.preventDefault();
+                    const index = letters.indexOf(key);
+                    toggleLetterSelection(index);
+                }
+                else if (e.key === 'Backspace' || e.key === 'Delete') {
+                    e.preventDefault();
+                    if (getC('selected_letter_count') > 0) {
+                        const lastSelectedIndex = Module.ccall('getSelectedLetter', 'number', ['number'], [getC('selected_letter_count') - 1]);
+                        toggleLetterSelection(lastSelectedIndex);
+                    }
                 }
             }
-            // Handle enter to submit word
-            else if (e.key === 'Enter') {
+
+            // Always process these keys
+            if (e.key === 'Enter') {
                 e.preventDefault();
                 submitWord();
             }
-            // Handle escape to clear selection
             else if (e.key === 'Escape') {
                 e.preventDefault();
-                // Clear all selected letters
-                while (getC('selected_letter_count') > 0) {
-                    const lastSelectedIndex = Module.ccall('getSelectedLetter', 'number', ['number'], [getC('selected_letter_count') - 1]);
-                    toggleLetterSelection(lastSelectedIndex);
-                }
+                clearSelection();
             }
         }
 
-        // Add keyboard listener when page loads
-        document.addEventListener('DOMContentLoaded', function() {
-            document.addEventListener('keydown', handleKeyboardInput);
-        });
-
-        // Enhanced toggle with visual feedback
         function toggleLetterSelection(index) {
             Module.ccall("toggleLetterSelection", 'void', ['number'], [index]);
-            
-            // Add visual feedback
-            const letterElements = document.querySelectorAll('.letter');
-            if (index >= 0 && index < letterElements.length) {
-                letterElements[index].classList.toggle('selected');
-                letterElements[index].style.transform = 'scale(1.1)';
-                setTimeout(() => {
-                    letterElements[index].style.transform = 'scale(1)';
-                }, 200);
-            }
-            
+            updateLetterVisuals();
             updateWordInput();
-            updateGameUI();
         }
+
+        function clearSelection() {
+            while (getC('selected_letter_count') > 0) {
+                const lastSelectedIndex = Module.ccall('getSelectedLetter', 'number', ['number'], [getC('selected_letter_count') - 1]);
+                toggleLetterSelection(lastSelectedIndex);
+            }
+        }
+
+        function updateLetterVisuals() {
+            const letterElements = document.querySelectorAll('.letter');
+            letterElements.forEach((el, index) => {
+                const isSelected = Array.from({length: getC('selected_letter_count')}, (_, i) => 
+                    Module.ccall('getSelectedLetter', 'number', ['number'], [i])
+                ).includes(index);
+                
+                el.classList.toggle('selected', isSelected);
+            });
+        }
+
+        function updateWordInput() {
+            let word = '';
+            for (let i = 0; i < getC('selected_letter_count'); i++) {
+                const letterPtr = Module.ccall('getLetter', 'number', ['number'], [
+                    Module.ccall('getSelectedLetter', 'number', ['number'], [i])
+                ]);
+                word += String.fromCharCode(letterPtr);
+            }
+            wordInput.value = word;
+        }
+
+        // Initialize keyboard handling
+        document.addEventListener('DOMContentLoaded', function() {
+            document.addEventListener('keydown', handleKeyboardInput);
+            
+            // Set up input synchronization
+            wordInput.addEventListener('input', function() {
+                // Clear current selection
+                clearSelection();
+                
+                // Convert input to lowercase and filter valid letters
+                const inputText = this.value.toLowerCase();
+                const availableLetters = [];
+                for (let i = 0; i < getC('letter_count'); i++) {
+                    availableLetters.push(String.fromCharCode(
+                        Module.ccall('getLetter', 'number', ['number'], [i])
+                    ).toLowerCase());
+                }
+                
+                // Select letters matching input
+                for (const char of inputText) {
+                    if (availableLetters.includes(char)) {
+                        const index = availableLetters.indexOf(char);
+                        toggleLetterSelection(index);
+                    }
+                }
+            });
+        });
     </script>
     <script src="game.js"></script>
 </body>
