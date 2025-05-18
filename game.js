@@ -443,6 +443,9 @@ function updateWordInput() {
 function submitWord() {
     const word = wordInput.value.trim().toLowerCase();
 
+    
+    gameMessage.classList.add('hidden');
+
     const status = Module.ccall(
         'submitWord',  
         'number',       
@@ -455,7 +458,7 @@ function submitWord() {
             showMessage(gameMessage, 'Please enter a word', 'error');
             break;
         case 2:
-            saveAndQuit()
+            saveAndQuit();
             break;
         case 3:
             showMessage(gameMessage, `Word too short! Needs at least ${getC("min_length")} letters.`, 'error');
@@ -467,14 +470,21 @@ function submitWord() {
             showMessage(gameMessage, 'Word not in dictionary!', 'error');
             break;
         case 6:
-            showMessage(gameMessage, 'Word already found!', 'error');
+            showMessage(gameMessage, `"${word}" has already been found! Try another word.`, 'error');
+            wordInput.value = ''; 
+            break;
         default:
-            showMessage(gameMessage, `Valid word: ${word} (+${word.length * getC('level')} points)`, 'success');
+            showMessage(gameMessage, `Valid word: "${word}" (+${word.length * getC('level')} points)`, 'success');
             if (status) {
                 setTimeout(completeLevel, 1000);
             } else {
                 updateGameUI();
             }
+    }
+    
+    
+    if (status !== 2 && status !== 6) {
+        wordInput.focus();
     }
 }
 
