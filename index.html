@@ -3,38 +3,12 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Dreamy French Word Project</title>
+    <title>Dreamy French Word projet</title>
     <link rel="stylesheet" href="style.css">
-    <link rel="icon" href="icon.ico" type="image/x-icon">
+    <link rel="icon" href="icon.ico" type="image/x-con">
     <script src="three.min.js"></script>
     <script src="french-dictionary.js"></script>
     <script src="french_word_dream.js"></script>
-    <style>
-        .letter {
-            transition: all 0.2s ease;
-            cursor: pointer;
-            display: inline-block;
-            margin: 5px;
-            padding: 10px;
-            border-radius: 5px;
-            background-color: #f0f0f0;
-        }
-        .letter.selected {
-            background-color: #ff6b6b;
-            color: white;
-            transform: scale(1.1);
-        }
-        .dream-input {
-            width: 100%;
-            padding: 10px;
-            margin: 10px 0;
-            font-size: 16px;
-        }
-        #letters-container {
-            margin: 20px 0;
-            text-align: center;
-        }
-    </style>
 </head>
 <body>
     <div id="threejs-bg"></div>
@@ -119,11 +93,11 @@
                     <div class="dream-stats">
                         <div class="dream-stat">
                             <div class="stat-value" id="words-found">0</div>
-                            <div class="stat-label">Words Found</div>
+                            <div class="stat-label">words Found</div>
                         </div>
                         <div class="dream-stat">
                             <div class="stat-value" id="words-needed">3</div>
-                            <div class="stat-label">Words Needed</div>
+                            <div class="stat-label">words Needed</div>
                         </div>
                         <div class="dream-stat">
                             <div class="stat-value" id="min-length">3</div>
@@ -135,14 +109,14 @@
                 <div class="dream-letters" id="letters-container"></div>
                 
                 <div class="dream-input-group">
-                    <input type="text" id="word-input" placeholder="Type or select letters" class="dream-input">
+                    <input type="text" id="word-input" placeholder="Enter word sequence" class="dream-input" readonly>
                     <button id="submit-word-btn" class="dream-btn">Submit</button>
                 </div>
                 
                 <div id="game-message" class="dream-message hidden"></div>
                 
                 <div class="dream-list">
-                    <h3 class="soft-title">Found Words</h3>
+                    <h3 class="soft-title">Found Words!!</h3>
                     <div class="word-list" id="word-list"></div>
                 </div>
                 
@@ -150,133 +124,6 @@
             </div>
         </div>
     </div>
-
-    <script>
-        // Track synchronization state
-        let isSyncingSelection = false;
-        let isSyncingInput = false;
-
-        // Initialize game
-        function initGame() {
-            document.addEventListener('keydown', handleKeyboardInput);
-            wordInput.addEventListener('input', handleInputChange);
-        }
-
-        // Keyboard input handler
-        function handleKeyboardInput(e) {
-            if (!document.getElementById('game-screen').classList.contains('active')) return;
-            
-            const letters = getAvailableLetters();
-            const key = e.key.toLowerCase();
-            const inputFocused = document.activeElement === wordInput;
-
-            // Process game controls when input isn't focused
-            if (!inputFocused) {
-                if (letters.includes(key)) {
-                    e.preventDefault();
-                    const index = letters.indexOf(key);
-                    toggleLetterSelection(index);
-                }
-                else if (e.key === 'Backspace' || e.key === 'Delete') {
-                    e.preventDefault();
-                    removeLastSelectedLetter();
-                }
-            }
-
-            // Global controls
-            if (e.key === 'Enter') {
-                e.preventDefault();
-                submitWord();
-            }
-            else if (e.key === 'Escape') {
-                e.preventDefault();
-                clearSelection();
-            }
-        }
-
-        // Input change handler
-        function handleInputChange() {
-            if (isSyncingSelection) return;
-            
-            isSyncingInput = true;
-            const inputText = wordInput.value.toLowerCase();
-            const availableLetters = getAvailableLetters();
-            
-            // Clear current selection
-            clearSelection();
-            
-            // Select letters matching input
-            for (const char of inputText) {
-                if (availableLetters.includes(char)) {
-                    const index = availableLetters.indexOf(char);
-                    Module.ccall("toggleLetterSelection", 'void', ['number'], [index]);
-                }
-            }
-            
-            updateLetterVisuals();
-            isSyncingInput = false;
-        }
-
-        // Helper functions
-        function getAvailableLetters() {
-            const letters = [];
-            for (let i = 0; i < getC('letter_count'); i++) {
-                letters.push(String.fromCharCode(
-                    Module.ccall('getLetter', 'number', ['number'], [i])
-                ).toLowerCase());
-            }
-            return letters;
-        }
-
-        function toggleLetterSelection(index) {
-            Module.ccall("toggleLetterSelection", 'void', ['number'], [index]);
-            updateLetterVisuals();
-            updateInputFromSelection();
-        }
-
-        function removeLastSelectedLetter() {
-            if (getC('selected_letter_count') > 0) {
-                const lastIndex = Module.ccall('getSelectedLetter', 'number', ['number'], [getC('selected_letter_count') - 1]);
-                toggleLetterSelection(lastIndex);
-            }
-        }
-
-        function clearSelection() {
-            while (getC('selected_letter_count') > 0) {
-                removeLastSelectedLetter();
-            }
-        }
-
-        function updateLetterVisuals() {
-            const letterElements = document.querySelectorAll('.letter');
-            const selectedIndices = Array.from(
-                {length: getC('selected_letter_count')}, 
-                (_, i) => Module.ccall('getSelectedLetter', 'number', ['number'], [i])
-            );
-            
-            letterElements.forEach((el, index) => {
-                el.classList.toggle('selected', selectedIndices.includes(index));
-            });
-        }
-
-        function updateInputFromSelection() {
-            if (isSyncingInput) return;
-            
-            isSyncingSelection = true;
-            let word = '';
-            for (let i = 0; i < getC('selected_letter_count'); i++) {
-                const letterPtr = Module.ccall('getLetter', 'number', ['number'], [
-                    Module.ccall('getSelectedLetter', 'number', ['number'], [i])
-                ]);
-                word += String.fromCharCode(letterPtr);
-            }
-            wordInput.value = word;
-            isSyncingSelection = false;
-        }
-
-        // Initialize when DOM is loaded
-        document.addEventListener('DOMContentLoaded', initGame);
-    </script>
     <script src="game.js"></script>
 </body>
 </html>
