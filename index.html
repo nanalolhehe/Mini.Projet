@@ -11,8 +11,13 @@
     <script src="french_word_dream.js"></script>
     <style>
         .letter {
-            transition: transform 0.2s ease;
+            transition: all 0.2s ease;
             cursor: pointer;
+            display: inline-block;
+            margin: 5px;
+            padding: 10px;
+            border-radius: 5px;
+            background-color: #f0f0f0;
         }
         .letter.selected {
             background-color: #ff6b6b;
@@ -23,6 +28,11 @@
             width: 100%;
             padding: 10px;
             margin: 10px 0;
+            font-size: 16px;
+        }
+        #letters-container {
+            margin: 20px 0;
+            text-align: center;
         }
     </style>
 </head>
@@ -142,22 +152,25 @@
     </div>
 
     <script>
-        // Global keyboard handler
+        // Track synchronization state
+        let isSyncingSelection = false;
+        let isSyncingInput = false;
+
+        // Initialize game
+        function initGame() {
+            document.addEventListener('keydown', handleKeyboardInput);
+            wordInput.addEventListener('input', handleInputChange);
+        }
+
+        // Keyboard input handler
         function handleKeyboardInput(e) {
-            // Only handle game keys when game screen is active
             if (!document.getElementById('game-screen').classList.contains('active')) return;
             
-            // Get current letters
-            const letters = [];
-            for (let i = 0; i < getC('letter_count'); i++) {
-                const letter = String.fromCharCode(Module.ccall('getLetter', 'number', ['number'], [i])).toLowerCase();
-                letters.push(letter);
-            }
-
+            const letters = getAvailableLetters();
             const key = e.key.toLowerCase();
             const inputFocused = document.activeElement === wordInput;
 
-            // Process game controls only when input isn't focused
+            // Process game controls when input isn't focused
             if (!inputFocused) {
                 if (letters.includes(key)) {
                     e.preventDefault();
@@ -166,14 +179,11 @@
                 }
                 else if (e.key === 'Backspace' || e.key === 'Delete') {
                     e.preventDefault();
-                    if (getC('selected_letter_count') > 0) {
-                        const lastSelectedIndex = Module.ccall('getSelectedLetter', 'number', ['number'], [getC('selected_letter_count') - 1]);
-                        toggleLetterSelection(lastSelectedIndex);
-                    }
+                    removeLastSelectedLetter();
                 }
             }
 
-            // Always process these keys
+            // Global controls
             if (e.key === 'Enter') {
                 e.preventDefault();
                 submitWord();
@@ -184,31 +194,75 @@
             }
         }
 
+        // Input change handler
+        function handleInputChange() {
+            if (isSyncingSelection) return;
+            
+            isSyncingInput = true;
+            const inputText = wordInput.value.toLowerCase();
+            const availableLetters = getAvailableLetters();
+            
+            // Clear current selection
+            clearSelection();
+            
+            // Select letters matching input
+            for (const char of inputText) {
+                if (availableLetters.includes(char)) {
+                    const index = availableLetters.indexOf(char);
+                    Module.ccall("toggleLetterSelection", 'void', ['number'], [index]);
+                }
+            }
+            
+            updateLetterVisuals();
+            isSyncingInput = false;
+        }
+
+        // Helper functions
+        function getAvailableLetters() {
+            const letters = [];
+            for (let i = 0; i < getC('letter_count'); i++) {
+                letters.push(String.fromCharCode(
+                    Module.ccall('getLetter', 'number', ['number'], [i])
+                ).toLowerCase());
+            }
+            return letters;
+        }
+
         function toggleLetterSelection(index) {
             Module.ccall("toggleLetterSelection", 'void', ['number'], [index]);
             updateLetterVisuals();
-            updateWordInput();
+            updateInputFromSelection();
+        }
+
+        function removeLastSelectedLetter() {
+            if (getC('selected_letter_count') > 0) {
+                const lastIndex = Module.ccall('getSelectedLetter', 'number', ['number'], [getC('selected_letter_count') - 1]);
+                toggleLetterSelection(lastIndex);
+            }
         }
 
         function clearSelection() {
             while (getC('selected_letter_count') > 0) {
-                const lastSelectedIndex = Module.ccall('getSelectedLetter', 'number', ['number'], [getC('selected_letter_count') - 1]);
-                toggleLetterSelection(lastSelectedIndex);
+                removeLastSelectedLetter();
             }
         }
 
         function updateLetterVisuals() {
             const letterElements = document.querySelectorAll('.letter');
+            const selectedIndices = Array.from(
+                {length: getC('selected_letter_count')}, 
+                (_, i) => Module.ccall('getSelectedLetter', 'number', ['number'], [i])
+            );
+            
             letterElements.forEach((el, index) => {
-                const isSelected = Array.from({length: getC('selected_letter_count')}, (_, i) => 
-                    Module.ccall('getSelectedLetter', 'number', ['number'], [i])
-                ).includes(index);
-                
-                el.classList.toggle('selected', isSelected);
+                el.classList.toggle('selected', selectedIndices.includes(index));
             });
         }
 
-        function updateWordInput() {
+        function updateInputFromSelection() {
+            if (isSyncingInput) return;
+            
+            isSyncingSelection = true;
             let word = '';
             for (let i = 0; i < getC('selected_letter_count'); i++) {
                 const letterPtr = Module.ccall('getLetter', 'number', ['number'], [
@@ -217,35 +271,11 @@
                 word += String.fromCharCode(letterPtr);
             }
             wordInput.value = word;
+            isSyncingSelection = false;
         }
 
-        // Initialize keyboard handling
-        document.addEventListener('DOMContentLoaded', function() {
-            document.addEventListener('keydown', handleKeyboardInput);
-            
-            // Set up input synchronization
-            wordInput.addEventListener('input', function() {
-                // Clear current selection
-                clearSelection();
-                
-                // Convert input to lowercase and filter valid letters
-                const inputText = this.value.toLowerCase();
-                const availableLetters = [];
-                for (let i = 0; i < getC('letter_count'); i++) {
-                    availableLetters.push(String.fromCharCode(
-                        Module.ccall('getLetter', 'number', ['number'], [i])
-                    ).toLowerCase());
-                }
-                
-                // Select letters matching input
-                for (const char of inputText) {
-                    if (availableLetters.includes(char)) {
-                        const index = availableLetters.indexOf(char);
-                        toggleLetterSelection(index);
-                    }
-                }
-            });
-        });
+        // Initialize when DOM is loaded
+        document.addEventListener('DOMContentLoaded', initGame);
     </script>
     <script src="game.js"></script>
 </body>
