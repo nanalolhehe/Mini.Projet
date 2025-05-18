@@ -17,12 +17,6 @@
             background-color: #ff6b6b;
             color: white;
         }
-        .keyboard-hint {
-            text-align: center;
-            margin: 15px 0;
-            color: #a0a0ff;
-            font-size: 14px;
-        }
     </style>
 </head>
 <body>
@@ -123,10 +117,6 @@
                 
                 <div class="dream-letters" id="letters-container"></div>
                 
-                <div class="keyboard-hint">
-                    Type letters or click to select • Backspace to remove • Enter to submit
-                </div>
-                
                 <div class="dream-input-group">
                     <input type="text" id="word-input" placeholder="Enter word sequence" class="dream-input" readonly>
                     <button id="submit-word-btn" class="dream-btn">Submit</button>
@@ -146,9 +136,13 @@
     <script>
         // Keyboard input functionality
         function handleKeyboardInput(e) {
+            // Only handle keyboard input when game screen is active
+            if (!screens.game.classList.contains('active')) return;
+            
             // Don't interfere with input field when it's focused
             if (document.activeElement === wordInput) return;
             
+            // Get current letters
             const letters = [];
             for (let i = 0; i < getC('letter_count'); i++) {
                 const letter = String.fromCharCode(Module.ccall('getLetter', 'number', ['number'], [i])).toLowerCase();
@@ -186,46 +180,10 @@
             }
         }
 
-        // Add keyboard listeners when game starts
-        function startGame() {
-            if (!getC()) {
-                showScreen('login');
-                return;
-            }
-
-            Module.ccall('startGame', 'void', []);
-
-            updateGameUI();
-            wordInput.focus();
-            showScreen('game');
-            
-            // Add keyboard event listeners
+        // Add keyboard listener when page loads
+        document.addEventListener('DOMContentLoaded', function() {
             document.addEventListener('keydown', handleKeyboardInput);
-        }
-
-        // Remove keyboard listeners when leaving game
-        function saveAndQuit() {
-            document.removeEventListener('keydown', handleKeyboardInput);
-            saveUsers();
-            showMainMenu();
-        }
-
-        function completeLevel() {
-            showMessage(gameMessage, `Level ${getC('level')} completed! Your score: ${getC('score')}`, 'success');
-
-            setC('level', getC('level')+1);
-            saveUsers();
-            
-            document.removeEventListener('keydown', handleKeyboardInput);
-
-            setTimeout(() => {
-                if (confirm(`Level ${getC('level')-1} completed! Continue to next level?`)) {
-                    startGame();
-                } else {
-                    showMainMenu();
-                }
-            }, 1000);
-        }
+        });
 
         // Enhanced toggle with visual feedback
         function toggleLetterSelection(index) {
