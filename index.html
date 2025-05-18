@@ -109,7 +109,7 @@
                 <div class="dream-letters" id="letters-container"></div>
                 
                 <div class="dream-input-group">
-                    <input type="text" id="word-input" placeholder="Enter word sequence" class="dream-input" readonly>
+                    <input type="text" id="word-input" placeholder="Enter word sequence" class="dream-input">
                     <button id="submit-word-btn" class="dream-btn">Submit</button>
                 </div>
                 
@@ -124,6 +124,61 @@
             </div>
         </div>
     </div>
+    <script>
+        // Keyboard input functionality for the word sequence box
+        document.addEventListener('DOMContentLoaded', function() {
+            const wordInput = document.getElementById('word-input');
+            
+            // Remove the readonly attribute (it was in your original code)
+            wordInput.removeAttribute('readonly');
+            
+            // Focus the input when the game screen is active
+            function checkGameScreenFocus() {
+                if (document.getElementById('game-screen').classList.contains('active')) {
+                    wordInput.focus();
+                }
+            }
+            
+            // Check for game screen focus periodically
+            setInterval(checkGameScreenFocus, 500);
+            
+            // Handle keyboard input for letter selection
+            wordInput.addEventListener('keydown', function(e) {
+                // Allow backspace, delete, arrow keys, etc.
+                if (e.key.length === 1 && e.key.match(/[a-z]/i)) {
+                    e.preventDefault();
+                    const currentValue = wordInput.value;
+                    wordInput.value = currentValue + e.key.toLowerCase();
+                } else if (e.key === 'Backspace') {
+                    // Allow backspace
+                    return;
+                } else if (e.key === 'Enter') {
+                    e.preventDefault();
+                    document.getElementById('submit-word-btn').click();
+                }
+            });
+            
+            // Focus the input when clicking anywhere on the game screen
+            document.getElementById('game-screen').addEventListener('click', function() {
+                wordInput.focus();
+            });
+            
+            // Auto-focus input when game screen becomes active
+            const observer = new MutationObserver(function(mutations) {
+                mutations.forEach(function(mutation) {
+                    if (mutation.attributeName === 'class') {
+                        if (document.getElementById('game-screen').classList.contains('active')) {
+                            wordInput.focus();
+                        }
+                    }
+                });
+            });
+            
+            observer.observe(document.getElementById('game-screen'), {
+                attributes: true
+            });
+        });
+    </script>
     <script src="game.js"></script>
 </body>
 </html>
